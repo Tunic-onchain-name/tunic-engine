@@ -72,11 +72,11 @@ fn test_matches_bytes_suffix() {
     addr[18] = 0x35;
     addr[19] = 0x04;
 
-    let pattern = [0x35, 0x04];
-    assert!(matcher::matches_bytes(&addr, &pattern, Position::Suffix));
+    let pattern = vec![0x3, 0x5, 0x0, 0x4];
+    assert!(matcher::matches_nibbles(&addr, &pattern, Position::Suffix));
 
-    let bad_pattern = [0x04, 0x35];
-    assert!(!matcher::matches_bytes(&addr, &bad_pattern, Position::Suffix));
+    let bad_pattern = vec![0x0, 0x4, 0x3, 0x5];
+    assert!(!matcher::matches_nibbles(&addr, &bad_pattern, Position::Suffix));
 }
 
 #[test]
@@ -85,11 +85,11 @@ fn test_matches_bytes_prefix() {
     addr[0] = 0xab;
     addr[1] = 0xcd;
 
-    let pattern = [0xab, 0xcd];
-    assert!(matcher::matches_bytes(&addr, &pattern, Position::Prefix));
+    let pattern = vec![0xa, 0xb, 0xc, 0xd];
+    assert!(matcher::matches_nibbles(&addr, &pattern, Position::Prefix));
 
-    let bad_pattern = [0xab, 0xce];
-    assert!(!matcher::matches_bytes(&addr, &bad_pattern, Position::Prefix));
+    let bad_pattern = vec![0xa, 0xb, 0xc, 0xe];
+    assert!(!matcher::matches_nibbles(&addr, &bad_pattern, Position::Prefix));
 }
 
 #[test]
@@ -101,12 +101,14 @@ fn test_matches_bytes_combine() {
     addr[18] = 0xaa;
     addr[19] = 0xbb;
 
-    let pattern = [0xaa, 0xbb];
-    assert!(matcher::matches_bytes(&addr, &pattern, Position::Combine));
+    let pattern = vec![0xa, 0xa, 0xb, 0xb];
+    assert!(matcher::matches_nibbles(&addr, &pattern, Position::Prefix) 
+            && matcher::matches_nibbles(&addr, &pattern, Position::Suffix));
 
     // Break suffix
     addr[19] = 0xcc;
-    assert!(!matcher::matches_bytes(&addr, &pattern, Position::Combine));
+    assert!(!(matcher::matches_nibbles(&addr, &pattern, Position::Prefix) 
+            && matcher::matches_nibbles(&addr, &pattern, Position::Suffix)));
 }
 
 #[test]
@@ -114,16 +116,16 @@ fn test_matches_bytes_edge_cases() {
     let addr = [0xff; 20];
 
     // Empty pattern returns false
-    assert!(!matcher::matches_bytes(&addr, &[], Position::Prefix));
+    assert!(!matcher::matches_nibbles(&addr, &[], Position::Prefix));
 
-    // Full 20-byte pattern
-    let full = [0xff; 20];
-    assert!(matcher::matches_bytes(&addr, &full, Position::Prefix));
-    assert!(matcher::matches_bytes(&addr, &full, Position::Suffix));
+    // Full 40-nibble pattern
+    let full = vec![0xf; 40];
+    assert!(matcher::matches_nibbles(&addr, &full, Position::Prefix));
+    assert!(matcher::matches_nibbles(&addr, &full, Position::Suffix));
 
-    // 21-byte pattern (too long) returns false
-    let too_long = [0xff; 21];
-    assert!(!matcher::matches_bytes(&addr, &too_long, Position::Prefix));
+    // 41-nibble pattern (too long) returns false
+    let too_long = vec![0xf; 41];
+    assert!(!matcher::matches_nibbles(&addr, &too_long, Position::Prefix));
 }
 
 #[test]
@@ -150,4 +152,55 @@ fn test_encode_result_produces_valid_hex() {
         assert!(c.is_ascii_hexdigit());
         assert!(!c.is_uppercase());
     }
+}
+#[test]
+fn test_hex_pattern_validation() {
+    use engine::is_valid_hex_pattern;
+
+    assert!(is_valid_hex_pattern("abcd"));
+    assert!(is_valid_hex_pattern("123456"));
+    assert!(is_valid_hex_pattern("632")); // Odd length now valid
+    assert!(is_valid_hex_pattern("003")); // Odd length now valid
+    assert!(is_valid_hex_pattern(""));
+    
+    // Invalid characters
+    assert!(!is_valid_hex_pattern("ghjk"));
+    
+    // Too long
+    assert!(!is_valid_hex_pattern(&"a".repeat(41)));
+}
+
+#[test]
+fn test_matches_nibbles_basic() {
+    let mut addr = [0u8; 20];
+    // Address starts with 0x632...
+    addr[0] = 0x63;
+    addr[1] = 0x2A; // Next nibble is 2
+
+    // Prefix 632
+    let prefix = vec![6, 3, 2];
+    assert!(matcher::matches_nibbles(&addr, &prefix, Position::Prefix));
+    
+    // Prefix 6321 (Incorrect)
+    let prefix_bad = vec![6, 3, 2, 1];
+    assert!(!matcher::matches_nibbles(&addr, &prefix_bad, Position::Prefix));
+
+    // Suffix 003
+    // Address ends with ...003
+    addr[18] = 0x00;
+    addr[19] = 0xA3; // Last nibble is 3, second to last is A
+    // Wait, suffix "003" means the last 3 nibbles are 0, 0, 3.
+    // Address ends in ...XYZ
+    // In our address bytes: ... [addr 18] [addr 19]
+    // Bytes are ... [Z W] [X Y] (hex)
+    // "003" suffix means:
+    // Nibble 39 (Y) = 3
+    // Nibble 38 (X) = 0
+    // Nibble 37 (W) = 0
+    
+    addr[18] = 0x50; // W=0
+    addr[19] = 0x03; // X=0, Y=3
+    
+    let suffix = vec![0, 0, 3];
+    assert!(matcher::matches_nibbles(&addr, &suffix, Position::Suffix));
 }

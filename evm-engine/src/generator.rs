@@ -8,37 +8,26 @@ pub struct VanityResult {
     pub address: String,
 }
 
-/// Decode a hex string (no 0x prefix) into bytes.
-/// Panics on odd-length or invalid hex. Only called once before the loop.
-fn decode_hex(s: &str) -> Vec<u8> {
-    (0..s.len())
-        .step_by(2)
-        .map(|i| u8::from_str_radix(&s[i..i + 2], 16).expect("invalid hex in pattern"))
+/// Decode a hex string into a vector of nibbles (0-15).
+fn decode_to_nibbles(s: &str) -> Vec<u8> {
+    s.chars()
+        .map(|c| c.to_digit(16).expect("invalid hex in pattern") as u8)
         .collect()
 }
 
 pub fn generate_vanity(prefix: &str, suffix: &str, position: Position) -> VanityResult {
-    // Decode pattern hex strings to byte slices once, outside the loop.
-    let prefix_bytes = if !prefix.is_empty() {
-        decode_hex(prefix)
-    } else {
-        vec![]
-    };
-    let suffix_bytes = if !suffix.is_empty() {
-        decode_hex(suffix)
-    } else {
-        vec![]
-    };
+    let prefix_nibbles = decode_to_nibbles(prefix);
+    let suffix_nibbles = decode_to_nibbles(suffix);
 
     loop {
         let (address_bytes, private_key_bytes) = crypto::generate_keypair_raw();
 
         let matched = match position {
-            Position::Prefix => matcher::matches_bytes(&address_bytes, &prefix_bytes, Position::Prefix),
-            Position::Suffix => matcher::matches_bytes(&address_bytes, &suffix_bytes, Position::Suffix),
+            Position::Prefix => matcher::matches_nibbles(&address_bytes, &prefix_nibbles, Position::Prefix),
+            Position::Suffix => matcher::matches_nibbles(&address_bytes, &suffix_nibbles, Position::Suffix),
             Position::Combine => {
-                matcher::matches_bytes(&address_bytes, &prefix_bytes, Position::Prefix)
-                    && matcher::matches_bytes(&address_bytes, &suffix_bytes, Position::Suffix)
+                matcher::matches_nibbles(&address_bytes, &prefix_nibbles, Position::Prefix)
+                    && matcher::matches_nibbles(&address_bytes, &suffix_nibbles, Position::Suffix)
             }
         };
 
