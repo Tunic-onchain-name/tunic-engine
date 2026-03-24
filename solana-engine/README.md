@@ -302,7 +302,7 @@ Instructions for this will be included in the README and on the site.
 
 ```bash
 cd engine
-wasm-pack build --target web --out-dir ../web/public/wasm
+wasm-pack build --target frontend --out-dir ../frontend/public/wasm
 ```
 
 Output files placed in `web/public/wasm/`:
