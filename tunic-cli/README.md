@@ -1,50 +1,76 @@
 # Tunic CLI
 
-High-performance EVM vanity address generator.
+High-performance, industrial-grade vanity address generator for EVM and beyond. Built in Rust for maximum speed and security.
 
-## Distribution
+## 🚀 Installation
 
-### 1. Download Pre-built Binaries (Recommended)
-You can download the latest pre-built binaries for macOS, Linux, and Windows from the [GitHub Releases](https://github.com/Tunic-onchain-name/tunic-engine/releases) page.
+For the best experience and to avoid OS security blocks (macOS Gatekeeper/Windows SmartScreen), we recommend installing via **Cargo**. This builds the binary locally on your machine, ensuring it is fully trusted by your system.
 
-### 2. Install from Source (via Makefile)
-If you have the repository cloned and the [Rust](https://rustup.rs/) toolchain installed:
+### Option 1: Cargo (Recommended & Trusted)
+This is the most secure way to install `tunic`. It compiles the source code locally.
+
 ```bash
+# For Public Repository (HTTPS)
+cargo install --git https://github.com/Tunic-onchain-name/tunic-engine tunic-cli
+
+# For Private Repository (SSH)
+cargo install --git ssh://git@github.com/Tunic-onchain-name/tunic-engine.git tunic-cli
+```
+
+### Option 2: Pre-built Binaries
+If you don't have Rust installed, you can download binaries for macOS, Linux, and Windows:
+👉 [Latest Releases](https://github.com/Tunic-onchain-name/tunic-engine/releases)
+
+> [!IMPORTANT]
+> **macOS Users**: If you see a "developer cannot be verified" warning, right-click the binary in Finder and select **Open**, or run `xattr -d com.apple.quarantine <path-to-binary>`.
+
+### Option 3: Build from Source
+```bash
+git clone https://github.com/Tunic-onchain-name/tunic-engine.git
+cd tunic-engine
 make install
 ```
-This will build and install the `tunic` binary to your `~/.cargo/bin` directory.
 
-### 3. Direct Cargo Install
-```bash
-cargo install --path tunic-cli
-```
-Or directly from GitHub:
-```bash
-cargo install --git https://github.com/Tunic-onchain-name/tunic-engine --path tunic-cli
-```
+---
 
-## Usage
+## 🛠 Usage
 
-### Generate with Prefix
+The `tunic` CLI supports multiple matching modes to find your perfect vanity address.
+
+### 1. Prefix Matching
+Finds an address starting with your chosen characters.
 ```bash
 tunic generate --mode prefix --prefix dead
 ```
 
-### Generate with Suffix
+### 2. Suffix Matching
+Finds an address ending with your chosen characters.
 ```bash
 tunic generate --mode suffix --suffix beef
 ```
 
-### Generate with Combine
+### 3. Combined Matching
+Finds an address that has both a specific prefix and suffix.
 ```bash
 tunic generate --mode combine --combine de:ad
 ```
 
-## Flags
-- `-m, --mode <MODE>`: prefix, suffix, or combine
-- `--prefix <HEX>`: 0x-prefixed or raw hex
-- `--suffix <HEX>`: raw hex
-- `--combine <PREFIX:SUFFIX>`: separated by colon
+---
 
-## Performance
-Tunic uses the `rayon` crate to leverage all available CPU cores for industrial-grade brute-forcing speed.
+## 🚩 Commands & Flags
+
+| Flag | Description |
+|---|---|
+| `-m, --mode <MODE>` | Selection mode: `prefix`, `suffix`, or `combine` |
+| `--prefix <HEX>` | The prefix pattern to match (e.g., `dead`) |
+| `--suffix <HEX>` | The suffix pattern to match (e.g., `beef`) |
+| `--combine <P:S>` | Combined pattern separated by colon (e.g., `abc:123`) |
+
+## ⚡ Performance
+Tunic is built for speed. It leverages **Rayon** to distribute work across all available CPU cores, allowing you to brute-force millions of addresses per second.
+
+---
+
+## 🔒 Security
+- **100% Offline**: Tunic never makes network requests. Your private keys never leave your machine.
+- **Open Source**: Auditable Rust code using standard cryptographic primitives (`k256`, `tiny-keccak`).

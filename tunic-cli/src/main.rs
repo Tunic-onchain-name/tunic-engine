@@ -3,6 +3,9 @@ use evm_engine::crypto;
 use evm_engine::matcher::{self, Position};
 use rayon::prelude::*;
 use std::process::exit;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 #[derive(Parser)]
 #[command(name = "tunic")]
@@ -15,21 +18,16 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Generate a vanity address using brute-force
     Generate {
-        /// Mode of generation: prefix, suffix, or combine
         #[arg(short, long)]
         mode: Mode,
 
-        /// The prefix to start with (e.g. "0xdead")
         #[arg(long)]
         prefix: Option<String>,
 
-        /// The suffix to end with (e.g. "beef")
         #[arg(long)]
         suffix: Option<String>,
 
-        /// The prefix and suffix separated by a colon (e.g. "de:ad")
         #[arg(long)]
         combine: Option<String>,
     },
@@ -79,26 +77,83 @@ fn main() {
                 }
             };
 
-            println!("Searching for vanity address (using all CPU cores)...");
+            let num_threads = rayon::current_num_threads();
+            println!(
+                "Searching using {} threads (all available cores)...",
+                num_threads
+            );
+
+            let found = Arc::new(AtomicBool::new(false));
+            let counter = Arc::new(AtomicU64::new(0));
+
+            let found_reporter = Arc::clone(&found);
+            let counter_reporter = Arc::clone(&counter);
+
+            // Spawn progress reporter thread
+            std::thread::spawn(move || {
+                let start = Instant::now();
+                let mut last_count = 0u64;
+                loop {
+                    std::thread::sleep(Duration::from_secs(3));
+                    if found_reporter.load(Ordering::Relaxed) {
+                        break;
+                    }
+                    let current_count = counter_reporter.load(Ordering::Relaxed);
+                    let delta = current_count - last_count;
+                    last_count = current_count;
+                    let elapsed = start.elapsed().as_secs_f64();
+                    let rate = delta as f64 / 3.0;
+
+                    eprintln!(
+                        "  {:.2}M iter/sec | {:.0} total | {:.1}s elapsed",
+                        rate / 1_000_000.0,
+                        current_count as f64,
+                        elapsed
+                    );
+                }
+            });
 
             let result = rayon::iter::repeat(())
                 .find_map_any(|_| {
-                    let (address_bytes, private_key_bytes) = crypto::generate_keypair_raw();
-                    
-                    let matched = match position {
-                        Position::Prefix => matcher::matches_nibbles(&address_bytes, &prefix_nibbles, Position::Prefix),
-                        Position::Suffix => matcher::matches_nibbles(&address_bytes, &suffix_nibbles, Position::Suffix),
-                        Position::Combine => {
-                            matcher::matches_nibbles(&address_bytes, &prefix_nibbles, Position::Prefix)
-                                && matcher::matches_nibbles(&address_bytes, &suffix_nibbles, Position::Suffix)
-                        }
-                    };
-
-                    if matched {
-                        Some(crypto::encode_result(&address_bytes, &private_key_bytes))
-                    } else {
-                        None
+                    if found.load(Ordering::Relaxed) {
+                        return None;
                     }
+
+                    for _ in 0..1000 {
+                        let (address_bytes, private_key_bytes) = crypto::generate_keypair_raw();
+                        counter.fetch_add(1, Ordering::Relaxed);
+
+                        let matched = match position {
+                            Position::Prefix => matcher::matches_nibbles(
+                                &address_bytes,
+                                &prefix_nibbles,
+                                Position::Prefix,
+                            ),
+                            Position::Suffix => matcher::matches_nibbles(
+                                &address_bytes,
+                                &suffix_nibbles,
+                                Position::Suffix,
+                            ),
+                            Position::Combine => {
+                                matcher::matches_nibbles(
+                                    &address_bytes,
+                                    &prefix_nibbles,
+                                    Position::Prefix,
+                                ) && matcher::matches_nibbles(
+                                    &address_bytes,
+                                    &suffix_nibbles,
+                                    Position::Suffix,
+                                )
+                            }
+                        };
+
+                        if matched {
+                            found.store(true, Ordering::Relaxed);
+                            return Some(crypto::encode_result(&address_bytes, &private_key_bytes));
+                        }
+                    }
+
+                    None
                 });
 
             if let Some((private_key, address)) = result {
