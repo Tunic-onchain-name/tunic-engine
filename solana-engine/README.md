@@ -8,7 +8,7 @@
 
 ## 1. Project Summary
 
-Tunic is a fully client-side web tool that generates vanity Ethereum (EVM) wallet addresses. Users input a custom pattern (prefix or suffix), and Tunic brute-forces keypairs until it finds an address that matches. The private key and matching address are displayed once to the user and never sent anywhere.
+Tunic is a fully client-side web tool that generates vanity Solana wallet addresses. Users input a custom pattern (prefix or suffix), and Tunic brute-forces keypairs until it finds an address that matches. The private key and matching address are displayed once to the user and never sent anywhere.
 
 There is no server, no backend, no database, and no network requests during the generation process.
 

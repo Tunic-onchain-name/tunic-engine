@@ -1,5 +1,5 @@
-use engine::crypto;
-use engine::matcher::{self, Position};
+use evm_engine::crypto;
+use evm_engine::matcher::{self, Position};
 
 // ---------------------------------------------------------------------------
 // Existing string-based tests (fixed to match current matches() signature)
@@ -155,7 +155,7 @@ fn test_encode_result_produces_valid_hex() {
 }
 #[test]
 fn test_hex_pattern_validation() {
-    use engine::is_valid_hex_pattern;
+    use evm_engine::is_valid_hex_pattern;
 
     assert!(is_valid_hex_pattern("abcd"));
     assert!(is_valid_hex_pattern("123456"));

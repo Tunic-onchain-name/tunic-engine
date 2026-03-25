@@ -1,6 +1,9 @@
-use k256::{ecdsa::SigningKey, SecretKey};
+use k256::ecdsa::SigningKey;
+use k256::elliptic_curve::sec1::ToEncodedPoint;
+use k256::SecretKey;
 use tiny_keccak::{Hasher, Keccak};
 use std::fmt::Write;
+
 
 fn encode_hex(bytes: &[u8]) -> String {
     let mut s = String::with_capacity(bytes.len() * 2);
@@ -45,13 +48,12 @@ pub fn generate_keypair_raw() -> ([u8; 20], [u8; 32]) {
     let mut seed = [0u8; 32];
     getrandom::getrandom(&mut seed).expect("Failed to get random bytes");
 
-    let secret_key = SecretKey::from_slice(&seed).expect("Invalid secret key seed");
-    let signing_key = SigningKey::from(secret_key.clone());
+    let signing_key = SigningKey::from_bytes(&seed.into()).expect("Invalid secret key seed");
     let verifying_key = signing_key.verifying_key();
 
-    let uncompressed_pubkey = verifying_key.to_encoded_point(false);
-    let pubkey_bytes = uncompressed_pubkey.as_bytes();
-    let pubkey_no_prefix = &pubkey_bytes[1..];
+    let affine = verifying_key.as_affine();
+    let encoded = affine.to_encoded_point(false);
+    let pubkey_no_prefix = &encoded.as_bytes()[1..];
 
     let mut hasher = Keccak::v256();
     hasher.update(pubkey_no_prefix);

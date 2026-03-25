@@ -1,0 +1,45 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger only on version tags like v0.1.0
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: tunic
+            release_name: tunic-linux
+          - os: macos-latest
+            artifact_name: tunic
+            release_name: tunic-macos
+          - os: windows-latest
+            artifact_name: tunic.exe
+            release_name: tunic-windows.exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Release Binary
+        run: cargo build --release --package tunic-cli
+
+      - name: Rename Binary
+        shell: bash
+        run: |
+          mkdir dist
+          cp tunic-cli/target/release/${{ matrix.artifact_name }} dist/${{ matrix.release_name }}
+
+      - name: Release to GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

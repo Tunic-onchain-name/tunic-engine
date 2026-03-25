@@ -1,4 +1,6 @@
+#[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
+#[cfg(target_arch = "wasm32")]
 use crate::matcher::Position;
 
 pub mod crypto;
@@ -9,6 +11,7 @@ pub fn is_valid_hex_pattern(s: &str) -> bool {
     s.chars().all(|c| c.is_ascii_hexdigit()) && s.len() <= 40
 }
 
+#[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 pub fn generate_vanity(prefix: &str, suffix: &str, position_str: &str) -> JsValue {
     if !is_valid_hex_pattern(prefix) || !is_valid_hex_pattern(suffix) {
