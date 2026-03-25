@@ -6,6 +6,7 @@ use std::process::exit;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+use colored::*;
 
 #[derive(Parser)]
 #[command(name = "tunic")]
@@ -18,19 +19,26 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Generate a vanity address using brute-force
     Generate {
+        /// Mode of generation: prefix, suffix, or combine
         #[arg(short, long)]
         mode: Mode,
 
+        /// The prefix to start with (e.g. "0xdead")
         #[arg(long)]
         prefix: Option<String>,
 
+        /// The suffix to end with (e.g. "beef")
         #[arg(long)]
         suffix: Option<String>,
 
+        /// The prefix and suffix separated by a colon (e.g. "de:ad")
         #[arg(long)]
         combine: Option<String>,
     },
+    /// Update the CLI to the latest version from GitHub
+    UpLatest,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -52,11 +60,67 @@ fn decode_to_nibbles(s: &str) -> Vec<u8> {
         .collect()
 }
 
+fn check_for_updates() {
+    let current_version = env!("CARGO_PKG_VERSION");
+    let releases = self_update::backends::github::ReleaseList::configure()
+        .repo_owner("Tunic-onchain-name")
+        .repo_name("tunic-engine")
+        .build()
+        .map(|r| r.fetch());
+
+    if let Ok(Ok(releases)) = releases {
+        if let Some(latest) = releases.first() {
+            if self_update::version::bump_is_greater(current_version, &latest.version)
+                .unwrap_or(false)
+            {
+                eprintln!(
+                    "\n{}\n",
+                    "Your device is running an older version. The latest version is now available. Please update to the latest version by running `tunic up-latest`.".yellow()
+                );
+            }
+        }
+    }
+}
+
+fn handle_update() -> Result<(), Box<dyn std::error::Error>> {
+    let target = self_update::get_target();
+    let asset_name = match target {
+        t if t.contains("apple-darwin") => "tunic-macos",
+        t if t.contains("linux") => "tunic-linux",
+        t if t.contains("windows") => "tunic-windows.exe",
+        _ => return Err(format!("Unsupported target: {}", target).into()),
+    };
+
+    let status = self_update::backends::github::Update::configure()
+        .repo_owner("Tunic-onchain-name")
+        .repo_name("tunic-engine")
+        .bin_name("tunic")
+        .target(asset_name)
+        .show_download_progress(true)
+        .current_version(env!("CARGO_PKG_VERSION"))
+        .build()?
+        .update()?;
+    println!("Update status: `{}`!", status.version());
+    Ok(())
+}
+
 fn main() {
+    check_for_updates();
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Generate { mode, prefix, suffix, combine } => {
+        Commands::UpLatest => {
+            if let Err(e) = handle_update() {
+                eprintln!("{}: {}", "Error updating".red(), e);
+                exit(1);
+            }
+        }
+        Commands::Generate {
+            mode,
+            prefix,
+            suffix,
+            combine,
+        } => {
             let (prefix_nibbles, suffix_nibbles, position) = match mode {
                 Mode::Prefix => {
                     let s = prefix.expect("Error: --prefix is required for Prefix mode");

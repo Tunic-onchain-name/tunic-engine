@@ -17,13 +17,16 @@ jobs:
         include:
           - os: ubuntu-latest
             artifact_name: tunic
-            release_name: tunic-linux
+            release_name: tunic-x86_64-unknown-linux-gnu
           - os: macos-latest
             artifact_name: tunic
-            release_name: tunic-macos
+            release_name: tunic-x86_64-apple-darwin
+          - os: macos-14
+            artifact_name: tunic
+            release_name: tunic-aarch64-apple-darwin
           - os: windows-latest
             artifact_name: tunic.exe
-            release_name: tunic-windows.exe
+            release_name: tunic-windows-x86_64.exe
 
     steps:
       - uses: actions/checkout@v4
