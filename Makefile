@@ -15,7 +15,7 @@ help:
 
 build:
 	@echo "Building $(BINARY_NAME) CLI..."
-	cd tunic-cli && cargo build --release
+	cargo build --release --package tunic-cli
 
 install:
 	@echo "Installing $(BINARY_NAME) CLI..."
@@ -24,5 +24,4 @@ install:
 
 clean:
 	@echo "Cleaning artifacts..."
-	cd evm-engine && cargo clean
-	cd tunic-cli && cargo clean
+	cargo clean

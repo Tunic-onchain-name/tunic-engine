@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "evm-engine",
+    "solana-engine",
+    "tunic-cli",
+]
+resolver = "2"

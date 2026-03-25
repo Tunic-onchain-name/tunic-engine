@@ -35,7 +35,7 @@ jobs:
         shell: bash
         run: |
           mkdir dist
-          cp tunic-cli/target/release/${{ matrix.artifact_name }} dist/${{ matrix.release_name }}
+          cp target/release/${{ matrix.artifact_name }} dist/${{ matrix.release_name }}
 
       - name: Release to GitHub
         uses: softprops/action-gh-release@v2
