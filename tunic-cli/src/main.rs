@@ -10,7 +10,7 @@ use colored::*;
 
 #[derive(Parser)]
 #[command(name = "tunic")]
-#[command(author = "Tunic Team", version = "0.1.0")]
+#[command(author = "Tunic Team", version = env!("CARGO_PKG_VERSION"))]
 #[command(about = "High-performance EVM vanity address generator", long_about = "A multi-threaded search engine for EVM-compatible vanity addresses.")]
 struct Cli {
     #[command(subcommand)]
