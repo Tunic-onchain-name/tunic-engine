@@ -5,7 +5,7 @@ High-performance EVM vanity address generator.
 ## Distribution
 
 ### 1. Download Pre-built Binaries (Recommended)
-You can download the latest pre-built binaries for macOS, Linux, and Windows from the [GitHub Releases](https://github.com/singgih/tunic-wallet/releases) page.
+You can download the latest pre-built binaries for macOS, Linux, and Windows from the [GitHub Releases](https://github.com/Tunic-onchain-name/tunic-engine/releases) page.
 
 ### 2. Install from Source (via Makefile)
 If you have the repository cloned and the [Rust](https://rustup.rs/) toolchain installed:
@@ -20,7 +20,7 @@ cargo install --path tunic-cli
 ```
 Or directly from GitHub:
 ```bash
-cargo install --git https://github.com/singgih/tunic-wallet --path tunic-cli
+cargo install --git https://github.com/Tunic-onchain-name/tunic-engine --path tunic-cli
 ```
 
 ## Usage
