@@ -20,20 +20,31 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Generate a vanity address using brute-force
+    #[command(long_about = "Generate a vanity address using high-performance brute-force search.
+
+Examples:
+  # Search for addresses starting with 0xdead
+  tunic generate --mode prefix --prefix dead
+
+  # Search for addresses ending with beef
+  tunic generate --mode suffix --suffix beef
+
+  # Search for addresses starting with de and ending with ad
+  tunic generate --mode combine --combine de:ad")]
     Generate {
         /// Mode of generation: prefix, suffix, or combine
         #[arg(short, long)]
         mode: Mode,
 
-        /// The prefix to start with (e.g. "0xdead")
+        /// The prefix to start with (e.g. \"0xdead\")
         #[arg(long)]
         prefix: Option<String>,
 
-        /// The suffix to end with (e.g. "beef")
+        /// The suffix to end with (e.g. \"beef\")
         #[arg(long)]
         suffix: Option<String>,
 
-        /// The prefix and suffix separated by a colon (e.g. "de:ad")
+        /// The prefix and suffix separated by a colon (e.g. \"de:ad\")
         #[arg(long)]
         combine: Option<String>,
     },
