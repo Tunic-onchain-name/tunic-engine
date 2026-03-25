@@ -95,18 +95,20 @@ fn check_for_updates() {
 
 fn handle_update() -> Result<(), Box<dyn std::error::Error>> {
     let target = self_update::get_target();
-    let asset_name = match target {
-        t if t.contains("apple-darwin") => "tunic-macos",
-        t if t.contains("linux") => "tunic-linux",
-        t if t.contains("windows") => "tunic-windows.exe",
-        _ => return Err(format!("Unsupported target: {}", target).into()),
+    
+    // Kita samakan dengan format di release.yml: tunic-{target}
+    // Khusus windows, kita pastikan ada .exe
+    let asset_name = if target.contains("windows") {
+        "tunic-windows-x86_64.exe".to_string()
+    } else {
+        format!("tunic-{}", target)
     };
 
     let status = self_update::backends::github::Update::configure()
         .repo_owner("Tunic-onchain-name")
         .repo_name("tunic-engine")
         .bin_name("tunic")
-        .target(asset_name)
+        .target(&asset_name)
         .show_download_progress(true)
         .current_version(env!("CARGO_PKG_VERSION"))
         .build()?
